@@ -8,17 +8,17 @@
 import Foundation
 import SwiftyMath
 
-public typealias Grid1<Object: Equatable> = GridN<_1, Object>
-public typealias Grid2<Object: Equatable> = GridN<_2, Object>
+public typealias Grid1<Object> = GridN<_1, Object>
+public typealias Grid2<Object> = GridN<_2, Object>
 
-public struct GridN<n: _Int, Object: Equatable>: CustomStringConvertible {
+public struct GridN<n: _Int, Object>: CustomStringConvertible {
     public let name: String
     internal var grid: [IntList : Object?]
     internal let defaultObject: Object?
 
     public init(name: String? = nil, grid: [IntList : Object?] = [:], default defaultObject: Object? = nil) {
         self.name = name ?? ""
-        self.grid = grid.exclude{ $0.value == defaultObject }
+        self.grid = grid
         self.defaultObject = defaultObject
     }
     

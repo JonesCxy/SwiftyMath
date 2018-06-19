@@ -31,7 +31,7 @@ public extension Link {
     }
 }
 
-enum GridDiagramPiece: CustomStringConvertible {
+enum GridDiagramPiece: CustomStringConvertible, CustomDebugStringConvertible {
     case TL(edge: Edge) // ┎
     case TR(edge: Edge) // ┒
     case BL(edge: Edge) // ┖
@@ -49,6 +49,18 @@ enum GridDiagramPiece: CustomStringConvertible {
         case  .H(_): return "─"
         case  .V(_): return "┃"
         case  .X(_): return "╂"
+        }
+    }
+    
+    var debugDescription: String {
+        switch self {
+        case let .TL(e): return "┎(\(e.id))"
+        case let .TR(e): return "┒(\(e.id))"
+        case let .BL(e): return "┖(\(e.id))"
+        case let .BR(e): return "┚(\(e.id))"
+        case let  .H(e): return "─(\(e.id))"
+        case let  .V(e): return "┃(\(e.id))"
+        case let  .X(x): return "╂(\(x))"
         }
     }
 }
@@ -77,7 +89,20 @@ final class GridDiagramGenerator {
             placeCrossings(from: x0)
         }
         
+        for x in L.crossings {
+            connectEdges(x)
+        }
+        
         return grid
+    }
+    
+    func place(_ p: GridDiagramPiece, _ i: Int, _ j: Int) {
+        print("place", (i, j), "\t", p.debugDescription)
+        if grid[i, j] != nil {
+            print("\toverride", grid[i, j]!.debugDescription)
+            fatalError()
+        }
+        grid[i, j] = p
     }
     
     func placeCrossings(from x: Crossing) {
@@ -106,33 +131,67 @@ final class GridDiagramGenerator {
     }
     
     func placeCrossing(_ x: Crossing, _ i: Int, _ j: Int) {
-        grid[i, j] = .X(crossing: x)
+        place(.X(crossing: x), i, j)
         (i0, j0) = (i, j)
-        
-        print((i, j), ":", x)
     }
     
     func placeNextCrossing(_ e: Edge, _ x1: Crossing, _ i1: Int, _ j1: Int) {
         for i in (i0 + 1 ... i1) {
             if i < i1 {
-                grid[i,  j0] =  .H(edge: e)  // ─
+                place( .H(edge: e),  i, j0)  // ─
             } else if j1 > j0 {
-                grid[i1, j0] = .BR(edge: e) // ┚
+                place(.BR(edge: e), i1, j0)  // ┚
             } else if j1 < j0 {
-                grid[i1, j0] = .TR(edge: e) // ┒
+                place(.TR(edge: e), i1, j0)  // ┒
             }
         }
         
         if j1 > j0 + 1 {
             for j in (j0 + 1 ... j1 - 1) {
-                grid[i1, j] = .V(edge: e) // ┃
+                place( .V(edge: e), i1,  j)  // ┃
             }
         } else if j1 < j0 - 1 {
             for j in (j1 + 1 ... j0 - 1) {
-                grid[i1, j] = .V(edge: e) // ┃
+                place( .V(edge: e), i1,  j)  // ┃
             }
         }
         
         placeCrossing(x1, i1, j1)
+    }
+    
+    func pos(_ x: Crossing) -> (Int, Int) {
+        return grid.bidegrees.first{ (i, j) in
+            switch grid[i, j]! {
+            case .X(x): return true
+            default: return false
+            }
+        }!
+    }
+    
+    func connectEdges(_ x: Crossing) {
+        let (i, j) = pos(x)
+        if grid[i - 1, j] == nil && x.edge0.endPoint0 == (x, 0) {
+            connectEdge(x, 0)
+        }
+        if grid[i, j - 1] == nil && x.edge1.endPoint0 == (x, 1) {
+            connectEdge(x, 1)
+        }
+        if grid[i + 1, j] == nil && x.edge2.endPoint0 == (x, 2) {
+            connectEdge(x, 2)
+        }
+        if grid[i, j + 1] == nil && x.edge3.endPoint0 == (x, 3) {
+            connectEdge(x, 3)
+        }
+    }
+    
+    func connectEdge(_ x0: Crossing, _ k0: Int) {
+        let (i0, j0) = pos(x0)
+        let e = x0.edges[k0]
+        let (x1, k1) = e.endPoint1
+        let (i1, j1) = pos(x1)
+        
+        
+
+        print("connect ", (pos(x0), k0), "->", (pos(x1), k1))
     }
 }

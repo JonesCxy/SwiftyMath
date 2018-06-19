@@ -372,7 +372,7 @@ public struct Link: Equatable, CustomStringConvertible {
         }
         
         public let id: Int
-        fileprivate let edges: [Edge]
+        public let edges: [Edge]
         public var mode: Mode
         
         internal init(id: Int, edges e: (Edge, Edge, Edge, Edge), mode: Mode) {

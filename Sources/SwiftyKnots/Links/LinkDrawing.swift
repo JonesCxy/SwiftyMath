@@ -10,68 +10,7 @@ import SwiftyHomology
 
 public extension Link {
     internal var gridDiagram: Grid2<Piece> {
-        var grid = Grid2<Piece>()
-        if crossings.isEmpty {
-            return grid
-        }
-        
-        assert(components.count == 1)
-        
-        var queue = crossings
-        var x0: Crossing
-        var (i0, j0) = (0, 0)
-        
-        func add(_ e: Edge, _ x1: Crossing, _ i1: Int, _ j1: Int) {
-            for i in (i0 + 1 ... i1) {
-                if i < i1 {
-                    grid[i,  j0] = EdgePiece(.H, e)  // ─
-                } else if j1 > j0 {
-                    grid[i1, j0] = EdgePiece(.BR, e) // ┚
-                } else if j1 < j0 {
-                    grid[i1, j0] = EdgePiece(.TR, e) // ┒
-                }
-            }
-            
-            if j1 > j0 + 1 {
-                for j in (j0 + 1 ... j1 - 1) {
-                    grid[i1, j] = EdgePiece(.V, e) // ┃
-                }
-            } else if j1 < j0 - 1 {
-                for j in (j1 + 1 ... j0 - 1) {
-                    grid[i1, j] = EdgePiece(.V, e) // ┃
-                }
-            }
-            
-            grid[i1, j1] = CrossingPiece(x1)
-//            print((i1, j1), ":", x1)
-            
-            (x0, i0, j0) = (x1, i1, j1)
-        }
-        
-        while !queue.isEmpty {
-            x0 = queue.removeFirst()
-            grid[i0, j0] = CrossingPiece(x0)
-            
-            while queue.contains( x0.edge2.endPoint1.crossing ) {
-                let e = x0.edge2
-                let (x1, k) = e.endPoint1
-                
-                queue.remove(element: x1)
-                
-                switch k {
-                case 0:
-                    add(e, x1, i0 + 1, j0)
-                case 1:
-                    add(e, x1, i0 + 1, j0 + 1)
-                case 3:
-                    add(e, x1, i0 + 1, j0 - 1)
-                default:
-                    fatalError()
-                }
-            }
-        }
-        
-        return grid
+        return GridDiagramGenerator(self).generate()
     }
     
     public func draw() {
@@ -128,4 +67,87 @@ final class CrossingPiece: Piece {
     override var description: String {
         return "╂"
     }
+}
+
+final class GridDiagramGenerator {
+    let L: Link
+    
+    typealias Edge = Link.Edge
+    typealias Crossing = Link.Crossing
+    
+    var grid = Grid2<Piece>()
+    var queue: [Crossing]
+    var x0: Crossing!
+    var (i0, j0) = (0, 0)
+    
+    init(_ L: Link) {
+        self.L = L
+        self.queue = L.crossings
+    }
+    
+    func generate() -> Grid2<Piece> {
+        assert(L.components.count <= 1) // for now
+        
+        if L.crossings.isEmpty {
+            return grid
+        }
+        
+        while !queue.isEmpty {
+            placeCrossings()
+        }
+        
+        return grid
+    }
+    
+    func placeCrossings() {
+        x0 = queue.removeFirst()
+        grid[i0, j0] = CrossingPiece(x0)
+        
+        while queue.contains( x0.edge2.endPoint1.crossing ) {
+            let e = x0.edge2
+            let (x1, k) = e.endPoint1
+            
+            queue.remove(element: x1)
+            
+            switch k {
+            case 0:
+                add(e, x1, i0 + 1, j0)
+            case 1:
+                add(e, x1, i0 + 1, j0 + 1)
+            case 3:
+                add(e, x1, i0 + 1, j0 - 1)
+            default:
+                fatalError()
+            }
+        }
+    }
+    
+    func add(_ e: Edge, _ x1: Crossing, _ i1: Int, _ j1: Int) {
+        for i in (i0 + 1 ... i1) {
+            if i < i1 {
+                grid[i,  j0] = EdgePiece(.H, e)  // ─
+            } else if j1 > j0 {
+                grid[i1, j0] = EdgePiece(.BR, e) // ┚
+            } else if j1 < j0 {
+                grid[i1, j0] = EdgePiece(.TR, e) // ┒
+            }
+        }
+        
+        if j1 > j0 + 1 {
+            for j in (j0 + 1 ... j1 - 1) {
+                grid[i1, j] = EdgePiece(.V, e) // ┃
+            }
+        } else if j1 < j0 - 1 {
+            for j in (j1 + 1 ... j0 - 1) {
+                grid[i1, j] = EdgePiece(.V, e) // ┃
+            }
+        }
+        
+        grid[i1, j1] = CrossingPiece(x1)
+        
+//            print((i1, j1), ":", x1)
+        
+        (x0, i0, j0) = (x1, i1, j1)
+    }
+
 }

@@ -58,7 +58,7 @@ public struct ModuleObject<A: BasisElementType, R: EuclideanRing>: Equatable, Cu
         } else {
             let summands = basis.map{ z in Summand(z) }
             let (rootBasis, A, T) = extract(basis)
-            assert(T * A == Matrix.identity(size: basis.count))
+//            assert(T * A == Matrix.identity(size: basis.count))
             self.init(summands, rootBasis, T)
         }
     }
